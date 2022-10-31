@@ -1,10 +1,10 @@
 We create simple node js app for test docker
-#Build image
+# Build image
 In terminal write command, when project was created
 ```
 docker build -t 'decel337/appjs' .
 ```
-#Run image for test
+# Run image for test
 Run docker on 80 port and with 1 cpu and 512m memory:
 ```
 docker run -p 80:80 --cpus=1 -m 512m decel337/appjs
@@ -13,7 +13,7 @@ We can entry to localhost:80 or write simple command for check connection:
 ```
 curl http://localhost:80
 ```
-#Push image on DockerHub
+# Push image on DockerHub
 Login
 ```
 docker login
