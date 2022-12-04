@@ -10,5 +10,5 @@ const listenter = (_req, res) => {
 
 const server = http.createServer(listenter);
 server.listen(port, () => {
-    console.log("Server start");
+    console.log('Server start');
 });
