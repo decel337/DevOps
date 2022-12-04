@@ -35,7 +35,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./
-          file: ./Dockerfile
+          file: ./dockerjs/Dockerfile
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/appjs:latest
           outputs: type=docker,dest=/tmp/appjs.tar
 
