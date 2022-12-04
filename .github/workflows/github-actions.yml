@@ -1,0 +1,96 @@
+name: Code Analysis
+on:
+  push:
+    branches: [ci-cd]
+  pull_request:
+    branches: [ci-cd]
+jobs:
+  analyze_application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install packages
+        run: |
+          npm ci
+      - name: Eslint and Prettier checks
+        run: |
+          npm run lint:check
+          npm run format:check
+  build-docker-image:
+    needs: analyze_application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./
+          file: ./Dockerfile
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/appjs:latest
+          outputs: type=docker,dest=/tmp/appjs.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: DevOps
+          path: /tmp/appjs.tar
+
+  push-docker-image:
+    needs: build-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: DevOps
+          path: /tmp
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/appjs.tar
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/appjs
+  run-docker-image:
+    needs: push-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull Docker image
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/appjs:latest
+      - name: Run Docker image
+        run: |
+          docker run -p 80:80 -d ${{ secrets.DOCKERHUB_USERNAME }}/appjs
+          docker container ls
+      - name: curl
+        run: |
+          sleep 5;
+          curl localhost:80
