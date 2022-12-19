@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-check
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: k8s-check
+  template:
+    metadata:
+      labels:
+        app: k8s-check
+    spec:
+      containers:
+        - name: k8s-check
+          image: decel337/k8s-check:latest
+          ports:
+            - containerPort: 80
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              path: /k8s-check
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            failureThreshold: 2
+        - name: nginx
+          image: nginx
+          imagePullPolicy: IfNotPresent
+          resources:
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /etc/nginx
+              readOnly: true
+              name: nginx-conf
+            - mountPath: /var/log/nginx
+              name: log
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+              - key: virtualhost.conf
+                path: virtualhost/virtualhost.conf
+        - name: log
+          emptyDir: {}
